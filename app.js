@@ -444,7 +444,15 @@
   function afterNavigate() {
     refreshProgress();
     closeMenu();
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    var sidebar = $('#sidebar');
+    var active = $('.toc a[aria-current="page"]');
+    if (sidebar && active) {
+      var top = active.offsetTop - sidebar.clientHeight / 2 + active.offsetHeight / 2;
+      sidebar.scrollTop = Math.max(0, top);
+    }
     view.focus({ preventScroll: true });
   }
 
@@ -486,8 +494,7 @@
     var home = $('[data-home]');
     if (currentLessonId === null) home.setAttribute('aria-current', 'page'); else home.removeAttribute('aria-current');
 
-    var active = $('.toc a[aria-current="page"]');
-    if (active && active.scrollIntoView) active.scrollIntoView({ block: 'nearest' });
+
   }
 
   function showStorageNotice() {
@@ -604,31 +611,39 @@
   window.addEventListener('hashchange', route);
 
   /* ------------------------------------------------------------------ */
-  /* Theme: auto (follows the system) -> light -> dark                  */
+  /* Theme: toggles between light and dark mode                         */
   /* Stored under its own key so "Reset progress" leaves it alone.      */
   /* ------------------------------------------------------------------ */
   var THEME_KEY = course.storageKey.replace(/:v\d+$/, '') + ':theme';
-  var THEME_ORDER = ['auto', 'light', 'dark'];
-  var theme = 'auto';
+  var theme = 'dark';
+
+  function getEffectiveTheme() {
+    if (theme === 'light' || theme === 'dark') return theme;
+    return (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  }
 
   function applyTheme() {
-    if (theme === 'auto') document.documentElement.removeAttribute('data-theme');
-    else document.documentElement.setAttribute('data-theme', theme);
-    var label = 'Theme: ' + theme.charAt(0).toUpperCase() + theme.slice(1);
-    $$('[data-theme-toggle]').forEach(function (b) { b.textContent = label; });
+    var current = getEffectiveTheme();
+    document.documentElement.setAttribute('data-theme', current);
+    var label = current === 'dark' ? 'Light mode' : 'Dark mode';
+    $$('[data-theme-toggle]').forEach(function (b) {
+      b.textContent = label;
+      b.setAttribute('aria-pressed', current === 'light' ? 'true' : 'false');
+    });
   }
 
   function initTheme() {
+    theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
     try {
       var t = localStorage.getItem(THEME_KEY);
       if (t === 'light' || t === 'dark') theme = t;
-    } catch (e) { /* storage unavailable: stay on auto */ }
+    } catch (e) { /* storage unavailable */ }
     applyTheme();
     $$('[data-theme-toggle]').forEach(function (b) {
       b.addEventListener('click', function () {
-        theme = THEME_ORDER[(THEME_ORDER.indexOf(theme) + 1) % THEME_ORDER.length];
+        theme = getEffectiveTheme() === 'dark' ? 'light' : 'dark';
         try {
-          if (theme === 'auto') localStorage.removeItem(THEME_KEY); else localStorage.setItem(THEME_KEY, theme);
+          localStorage.setItem(THEME_KEY, theme);
         } catch (e) { /* ignore */ }
         applyTheme();
       });
@@ -646,3 +661,4 @@
   showStorageNotice();
   route();
 })();
+
