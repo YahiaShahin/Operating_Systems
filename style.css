@@ -32,7 +32,7 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: auto; }
 body {
   margin: 0; background: var(--bg); color: var(--ink);
   font-family: var(--f-body); font-size: 16px; line-height: 1.65;
@@ -244,3 +244,4 @@ dialog .row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 1
 .credit-author { font-weight: 700; color: var(--ink); }
 
 :root[data-theme="light"] { color-scheme: light; }
+
