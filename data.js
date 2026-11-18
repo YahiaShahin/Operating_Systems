@@ -1440,1155 +1440,833 @@ int main(void) {
       ]
     },
     {
-      id: "p3",
-      label: "Phase 3",
-      title: "Build the calculator",
-      lessons: [
+      "id": "p3",
+      "label": "Phase 3",
+      "title": "Build the calculator",
+      "lessons": [
         {
-          id: "p3-intro",
-          no: "",
-          title: "Overview",
-          blocks: [
+          "id": "p3-intro",
+          "no": "",
+          "title": "Overview",
+          "blocks": [
             {
-              type: "lede",
-              html: "The biggest phase. You write the whole project yourself, in six small steps, each ending with something you can run. You get the plan, skeletons, search terms and staged hints, not the code."
+              "type": "lede",
+              "html": "Now we build the real project. Instead of staring at a blank file, we will break the project into small, clear building blocks. Each step explains the concept first, shows you the partial code for that piece, and guides you through filling in the missing lines."
+            },
+            {
+              "type": "note",
+              "variant": "note",
+              "label": "How Phase 3 is organised",
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "html": "We will start by looking at the big-picture workflow so you see how <code>calculator.c</code> talks to the four child programs. Then we will build the child programs (<code>negate.c</code>, <code>add.c</code>, <code>sub.c</code>, <code>multiply.c</code>) because they are short and share the exact same structure. Finally, we will build <code>calculator.c</code> in three guided stages: the interactive prompt, the input checker, and the <code>fork</code>/<code>exec</code>/<code>waitpid</code> launcher."
+                }
+              ]
             }
           ]
         },
         {
-          id: "s3-0",
-          no: "3.0",
-          title: "The blueprint",
-          blocks: [
+          "id": "s3-0",
+          "no": "3.0",
+          "title": "The blueprint & workflow",
+          "blocks": [
             {
-              type: "lede",
-              html: "Read this step completely before you type anything. It is the contract every file must follow, so the five programs fit together even though you write them separately."
+              "type": "lede",
+              "html": "Before writing code, let's trace what happens from the moment you type a command at <code>calc&gt; </code> to the moment the result appears on screen."
             },
             {
-              type: "heading",
-              level: 4,
-              html: "Decisions already made for you"
+              "type": "heading",
+              "level": 3,
+              "html": "How the five files work together"
             },
             {
-              type: "list",
-              ordered: false,
-              items: [
-                "Numbers are <strong>integers</strong>. Use <code>long</code> in C.",
-                "The operator names are <code>add</code>, <code>sub</code>, <code>multiply</code> and <code>negate</code>, and each is also the name of its program.",
-                "The parent <strong>never does arithmetic</strong>. It checks the operator name and argument count. The <strong>child</strong> checks that its arguments are real numbers.",
-                "The child prints the result itself. The parent learns <em>how it ended</em> from the exit status.",
-                "The children live in the project folder, which is not in <code>PATH</code>, so the parent launches them as <code>./add</code>, <code>./sub</code> and so on."
-              ]
+              "type": "paragraph",
+              "html": "Your project folder <code>~/calc_project</code> has five C files. Each compiles into its own separate program:"
             },
             {
-              type: "heading",
-              level: 4,
-              html: "The contract"
-            },
-            {
-              type: "table",
-              head: ["Operator", "Arguments", "Program", "Prints on success"],
-              rows: [
-                ["<code>add</code>", "2", "<code>./add</code>", "<code>Result: A + B</code>"],
-                ["<code>sub</code>", "2", "<code>./sub</code>", "<code>Result: A - B</code>"],
+              "type": "table",
+              "head": [
+                "File",
+                "Compiled program",
+                "What it does",
+                "How many numbers it needs"
+              ],
+              "rows": [
                 [
-                  "<code>multiply</code>",
-                  "2",
-                  "<code>./multiply</code>",
-                  "<code>Result: A * B</code>"
+                  "<code>calculator.c</code>",
+                  "<code>./calculator</code>",
+                  "The parent program: shows <code>calc&gt; </code>, reads your line, checks the operator &amp; argument count, and starts the right child process",
+                  "None (reads from keyboard)"
                 ],
-                ["<code>negate</code>", "1", "<code>./negate</code>", "<code>Result: -A</code>"]
+                [
+                  "<code>negate.c</code>",
+                  "<code>./negate</code>",
+                  "Takes 1 integer <code>A</code> and prints <code>Result: -A</code>",
+                  "1"
+                ],
+                [
+                  "<code>add.c</code>",
+                  "<code>./add</code>",
+                  "Takes 2 integers <code>A B</code> and prints <code>Result: A + B</code>",
+                  "2"
+                ],
+                [
+                  "<code>sub.c</code>",
+                  "<code>./sub</code>",
+                  "Takes 2 integers <code>A B</code> and prints <code>Result: A - B</code>",
+                  "2"
+                ],
+                [
+                  "<code>multiply.c</code>",
+                  "<code>./multiply</code>",
+                  "Takes 2 integers <code>A B</code> and prints <code>Result: A * B</code>",
+                  "2"
+                ]
               ]
             },
             {
-              type: "paragraph",
-              html: "<strong>Every child program:</strong> reads its numbers from <code>argv</code>. On success it prints the result line to standard output and exits with status <code>0</code>. If the argument count is wrong or an argument is not an integer, it prints a message to <strong>standard error</strong> and exits with status <code>1</code>."
+              "type": "figure",
+              "svg": "<svg aria-label=\"Workflow: the parent reads and checks a line, forks, and waits; the child execs a program that exits with a status the parent reports\" role=\"img\" viewbox=\"0 0 760 410\">\n<defs><marker id=\"ah2\" markerheight=\"7\" markerwidth=\"7\" orient=\"auto-start-reverse\" refx=\"9\" refy=\"5\" viewbox=\"0 0 10 10\"><path d=\"M0 0L10 5L0 10z\" fill=\"var(--muted)\"></path></marker></defs>\n<rect class=\"sv-lane\" height=\"392\" rx=\"10\" width=\"380\" x=\"24\" y=\"8\"></rect>\n<rect class=\"sv-lane\" height=\"392\" rx=\"10\" width=\"284\" x=\"458\" y=\"8\"></rect>\n<text class=\"sv-h\" x=\"40\" y=\"28\">Parent: calculator.c</text>\n<text class=\"sv-h\" x=\"474\" y=\"28\">Child: starts as a copy</text>\n<rect class=\"sv-box\" height=\"50\" rx=\"8\" width=\"356\" x=\"36\" y=\"40\"></rect>\n<text class=\"sv-t\" x=\"50\" y=\"62\">1. Read a line</text><text class=\"sv-s\" x=\"50\" y=\"80\">show calc&gt;, read input with fgets, split into words</text>\n<rect class=\"sv-box\" height=\"50\" rx=\"8\" width=\"356\" x=\"36\" y=\"106\"></rect>\n<text class=\"sv-t\" x=\"50\" y=\"128\">2. Check operator &amp; count</text><text class=\"sv-s\" x=\"50\" y=\"146\">if invalid operator or wrong count: print error &amp; loop</text>\n<rect class=\"sv-box hi\" height=\"50\" rx=\"8\" width=\"356\" x=\"36\" y=\"172\"></rect>\n<text class=\"sv-t\" x=\"50\" y=\"194\">3. fork()</text><text class=\"sv-s\" x=\"50\" y=\"212\">parent gets child's PID; child gets 0</text>\n<rect class=\"sv-box hi\" height=\"50\" rx=\"8\" width=\"356\" x=\"36\" y=\"238\"></rect>\n<text class=\"sv-t\" x=\"50\" y=\"260\">4. waitpid(pid, &amp;status, 0)</text><text class=\"sv-s\" x=\"50\" y=\"278\">parent pauses until the child finishes</text>\n<rect class=\"sv-box\" height=\"50\" rx=\"8\" width=\"356\" x=\"36\" y=\"304\"></rect>\n<text class=\"sv-t\" x=\"50\" y=\"326\">5. Report exit status</text><text class=\"sv-s\" x=\"50\" y=\"344\">print whether child exited successfully (with PID)</text>\n<path class=\"sv-line\" d=\"M214 90V106\" marker-end=\"url(#ah2)\"></path>\n<path class=\"sv-line\" d=\"M214 156V172\" marker-end=\"url(#ah2)\"></path>\n<path class=\"sv-line\" d=\"M214 222V238\" marker-end=\"url(#ah2)\"></path>\n<path class=\"sv-line\" d=\"M214 288V304\" marker-end=\"url(#ah2)\"></path>\n<path class=\"sv-line\" d=\"M214 354V378H10V65H34\" marker-end=\"url(#ah2)\"></path>\n<text class=\"sv-s\" x=\"224\" y=\"372\">loop back to calc&gt;</text>\n<rect class=\"sv-box\" height=\"50\" rx=\"8\" width=\"256\" x=\"472\" y=\"172\"></rect>\n<text class=\"sv-t\" x=\"486\" y=\"194\">Child begins (pid == 0)</text><text class=\"sv-s\" x=\"486\" y=\"212\">builds path like \"./add\"</text>\n<rect class=\"sv-box hi\" height=\"50\" rx=\"8\" width=\"256\" x=\"472\" y=\"238\"></rect>\n<text class=\"sv-t\" x=\"486\" y=\"260\">execv(\"./add\", tokens)</text><text class=\"sv-s\" x=\"486\" y=\"278\">turns into the add program</text>\n<rect class=\"sv-box\" height=\"50\" rx=\"8\" width=\"256\" x=\"472\" y=\"304\"></rect>\n<text class=\"sv-t\" x=\"486\" y=\"326\">add.c main() runs</text><text class=\"sv-s\" x=\"486\" y=\"344\">checks numbers, prints Result, returns 0 or 1</text>\n<path class=\"sv-line\" d=\"M392 197H470\" marker-end=\"url(#ah2)\"></path>\n<text class=\"sv-a\" text-anchor=\"middle\" x=\"431\" y=\"189\">fork</text>\n<path class=\"sv-line\" d=\"M600 222V238\" marker-end=\"url(#ah2)\"></path>\n<path class=\"sv-line\" d=\"M600 288V304\" marker-end=\"url(#ah2)\"></path>\n<path class=\"sv-line dash\" d=\"M472 329H394\" marker-end=\"url(#ah2)\"></path>\n<text class=\"sv-s\" text-anchor=\"middle\" x=\"433\" y=\"321\">exit status (0 or 1)</text>\n</svg>",
+              "caption": "The step-by-step lifecycle of a single command in your calculator."
             },
             {
-              type: "paragraph",
-              html: "<strong>The parent</strong> prints exactly these messages. The text in capitals or between quotes is fixed; <code>N</code> and <code>PID</code> are numbers."
+              "type": "heading",
+              "level": 3,
+              "html": "Who checks what? (The division of labor)"
             },
             {
-              type: "table",
-              head: ["Situation", "The parent prints"],
-              rows: [
+              "type": "paragraph",
+              "html": "One of the most common points of confusion is knowing what goes in <code>calculator.c</code> versus what goes in <code>add.c</code>, <code>sub.c</code>, <code>multiply.c</code>, and <code>negate.c</code>. Here is the exact rule:"
+            },
+            {
+              "type": "list",
+              "ordered": true,
+              "items": [
+                "<strong>The parent (<code>calculator.c</code>) checks the command shape before forking:</strong> Is the first word one of <code>add</code>, <code>sub</code>, <code>multiply</code>, or <code>negate</code>? And did the user type the right number of arguments after it (2 for <code>add</code>/<code>sub</code>/<code>multiply</code>, 1 for <code>negate</code>)? If not, the parent prints an error right away and <strong>does not fork</strong>.",
+                "<strong>The child (<code>add.c</code>, etc.) checks if the arguments are valid integers:</strong> Once the child starts, it checks that the text strings it received (like <code>\"2\"</code> and <code>\"3\"</code>, or <code>\"abc\"</code>) are actually valid integers. If they are valid, it prints <code>Result: ...</code> and returns <code>0</code>. If an argument is not a valid number (like <code>\"abc\"</code>), it prints an error and returns <code>1</code>.",
+                "<strong>The parent reports how the child finished:</strong> After <code>waitpid</code> finishes, the parent checks the child's exit status. If status is <code>0</code>, it prints that the child exited successfully. Otherwise, it prints that the child exited unsuccessfully."
+              ]
+            },
+            {
+              "type": "heading",
+              "level": 3,
+              "html": "Exact messages your parent program will print"
+            },
+            {
+              "type": "table",
+              "head": [
+                "When this happens",
+                "calculator.c prints"
+              ],
+              "rows": [
                 [
-                  "Unknown operator",
+                  "Unknown operator (e.g. <code>divide 4 2</code>)",
                   "<code>Operation cannot execute: invalid operator \"divide\"</code>"
                 ],
                 [
-                  "Wrong argument count",
-                  "<code>Operation cannot execute: add needs 2 argument(s), got 1</code>"
+                  "Wrong argument count (e.g. <code>multiply 6</code>)",
+                  "<code>Operation cannot execute: multiply needs 2 argument(s), got 1</code>"
                 ],
                 [
-                  "Child exited with status 0",
+                  "Child returns 0 (success)",
                   "<code>child process exited successfully (PID 4243)</code>"
                 ],
                 [
-                  "Child exited with status N ≠ 0",
-                  "<code>child process exited unsuccessfully with status N (PID 4243)</code>"
+                  "Child returns N != 0 (e.g. bad number)",
+                  "<code>child process exited unsuccessfully with status 1 (PID 4243)</code>"
                 ],
                 [
-                  "Child was killed by a signal",
+                  "Child killed by a signal",
                   "<code>child process failed: killed by signal N (PID 4243)</code>"
                 ]
               ]
             },
             {
-              type: "paragraph",
-              html: "In both error cases at the top, the parent does <strong>not</strong> fork. The prompt is <code>calc&gt; </code> (with a trailing space) and the words <code>exit</code> or <code>quit</code>, or <kbd>Ctrl</kbd>+<kbd>D</kbd>, end the program with status 0."
-            },
-            {
-              type: "heading",
-              level: 4,
-              html: "The workflow"
-            },
-            {
-              type: "figure",
-              svg: "<svg aria-label=\"Workflow: the parent reads and checks a line, forks, and waits; the child execs a program that exits with a status the parent reports\" role=\"img\" viewbox=\"0 0 760 410\">\n<defs><marker id=\"ah2\" markerheight=\"7\" markerwidth=\"7\" orient=\"auto-start-reverse\" refx=\"9\" refy=\"5\" viewbox=\"0 0 10 10\"><path d=\"M0 0L10 5L0 10z\" fill=\"var(--muted)\"></path></marker></defs>\n<rect class=\"sv-lane\" height=\"392\" rx=\"10\" width=\"380\" x=\"24\" y=\"8\"></rect>\n<rect class=\"sv-lane\" height=\"392\" rx=\"10\" width=\"284\" x=\"458\" y=\"8\"></rect>\n<text class=\"sv-h\" x=\"40\" y=\"28\">Parent: calculator.c</text>\n<text class=\"sv-h\" x=\"474\" y=\"28\">Child: starts as a copy</text>\n<rect class=\"sv-box\" height=\"50\" rx=\"8\" width=\"356\" x=\"36\" y=\"40\"></rect>\n<text class=\"sv-t\" x=\"50\" y=\"62\">Read a line</text><text class=\"sv-s\" x=\"50\" y=\"80\">prompt, fgets, split into words</text>\n<rect class=\"sv-box\" height=\"50\" rx=\"8\" width=\"356\" x=\"36\" y=\"106\"></rect>\n<text class=\"sv-t\" x=\"50\" y=\"128\">Check the line</text><text class=\"sv-s\" x=\"50\" y=\"146\">bad operator or count: message, then next prompt</text>\n<rect class=\"sv-box hi\" height=\"50\" rx=\"8\" width=\"356\" x=\"36\" y=\"172\"></rect>\n<text class=\"sv-t\" x=\"50\" y=\"194\">fork()</text><text class=\"sv-s\" x=\"50\" y=\"212\">the parent receives the child's PID</text>\n<rect class=\"sv-box hi\" height=\"50\" rx=\"8\" width=\"356\" x=\"36\" y=\"238\"></rect>\n<text class=\"sv-t\" x=\"50\" y=\"260\">waitpid(pid, &amp;status, 0)</text><text class=\"sv-s\" x=\"50\" y=\"278\">sleeps until the child ends</text>\n<rect class=\"sv-box\" height=\"50\" rx=\"8\" width=\"356\" x=\"36\" y=\"304\"></rect>\n<text class=\"sv-t\" x=\"50\" y=\"326\">Report</text><text class=\"sv-s\" x=\"50\" y=\"344\">exited successfully or unsuccessfully, with the PID</text>\n<path class=\"sv-line\" d=\"M214 90V106\" marker-end=\"url(#ah2)\"></path>\n<path class=\"sv-line\" d=\"M214 156V172\" marker-end=\"url(#ah2)\"></path>\n<path class=\"sv-line\" d=\"M214 222V238\" marker-end=\"url(#ah2)\"></path>\n<path class=\"sv-line\" d=\"M214 288V304\" marker-end=\"url(#ah2)\"></path>\n<path class=\"sv-line\" d=\"M214 354V378H10V65H34\" marker-end=\"url(#ah2)\"></path>\n<text class=\"sv-s\" x=\"224\" y=\"372\">loop: back to the prompt</text>\n<rect class=\"sv-box\" height=\"50\" rx=\"8\" width=\"256\" x=\"472\" y=\"172\"></rect>\n<text class=\"sv-t\" x=\"486\" y=\"194\">Child begins</text><text class=\"sv-s\" x=\"486\" y=\"212\">a copy; fork returned 0 here</text>\n<rect class=\"sv-box hi\" height=\"50\" rx=\"8\" width=\"256\" x=\"472\" y=\"238\"></rect>\n<text class=\"sv-t\" x=\"486\" y=\"260\">execv(\"./add\", argv)</text><text class=\"sv-s\" x=\"486\" y=\"278\">same PID, new program</text>\n<rect class=\"sv-box\" height=\"50\" rx=\"8\" width=\"256\" x=\"472\" y=\"304\"></rect>\n<text class=\"sv-t\" x=\"486\" y=\"326\">add runs</text><text class=\"sv-s\" x=\"486\" y=\"344\">checks arguments, prints Result</text>\n<path class=\"sv-line\" d=\"M392 197H470\" marker-end=\"url(#ah2)\"></path>\n<text class=\"sv-a\" text-anchor=\"middle\" x=\"431\" y=\"189\">fork</text>\n<path class=\"sv-line\" d=\"M600 222V238\" marker-end=\"url(#ah2)\"></path>\n<path class=\"sv-line\" d=\"M600 288V304\" marker-end=\"url(#ah2)\"></path>\n<path class=\"sv-line dash\" d=\"M472 329H394\" marker-end=\"url(#ah2)\"></path>\n<text class=\"sv-s\" text-anchor=\"middle\" x=\"433\" y=\"321\">exit status</text>\n</svg>",
-              caption: "While the parent waits, the child becomes <code>add</code>. When <code>add</code> ends, its exit status travels back to the waiting parent."
-            },
-            {
-              type: "heading",
-              level: 4,
-              html: "The build order"
-            },
-            {
-              type: "paragraph",
-              html: "You will build from the smallest piece outward, and run every piece on its own before connecting it to the next."
-            },
-            {
-              type: "list",
-              ordered: true,
-              items: [
-                "<strong>3.1</strong> <code>negate.c</code>, fully guided. It teaches everything a child needs.",
-                "<strong>3.2</strong> <code>add.c</code>, <code>sub.c</code>, <code>multiply.c</code>, mostly on your own.",
-                "<strong>3.3</strong> <code>calculator.c</code> part A: the prompt and the words.",
-                "<strong>3.4</strong> part B: check the operator and the argument count.",
-                "<strong>3.5</strong> part C: fork, exec, wait, report.",
-                "<strong>3.6</strong> polish, break it, and look at the real processes."
-              ]
-            },
-            {
-              type: "note",
-              variant: "story",
-              label: "In the kitchen story",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "Build the line cooks first and make sure each one can cook alone. Only then hire the head cook who hands out the orders."
-                }
-              ]
-            },
-            {
-              type: "checkpoint",
-              title: "Checkpoint",
-              items: [
-                "I can say, without looking, who checks the operator, who checks the numbers, and who prints the result.",
-                "I understand why the children are started as <code>./add</code> and not <code>add</code>."
+              "type": "checkpoint",
+              "title": "Checkpoint",
+              "items": [
+                "I understand why there are 5 separate C files and what each one compiles into.",
+                "I know that <code>calculator.c</code> checks the operator name and count, while the child programs check whether the arguments are valid numbers and do the math."
               ]
             }
           ]
         },
         {
-          id: "s3-1",
-          no: "3.1",
-          title: "negate.c: your first child",
-          blocks: [
+          "id": "s3-1",
+          "no": "3.1",
+          "title": "negate.c: step-by-step child program",
+          "blocks": [
             {
-              type: "paragraph",
-              html: "<strong>Goal:</strong> a program that takes one argument and prints its negation, and refuses bad input. It is the smallest child, and everything you learn here repeats in the next three."
+              "type": "lede",
+              "html": "Let's build <code>negate.c</code> first. It only takes <strong>one</strong> number and prints its negative (for example, <code>./negate 5</code> prints <code>Result: -5</code>). Once you understand <code>negate.c</code>, writing the other three child programs will be easy."
             },
             {
-              type: "heading",
-              level: 4,
-              html: "Ideas you need"
+              "type": "heading",
+              "level": 3,
+              "html": "Step 1: How a C program receives command-line arguments"
             },
             {
-              type: "list",
-              ordered: false,
-              items: [
-                "<strong>Arguments.</strong> The shell splits your command into words and the program receives them as <code>argc</code> and <code>argv</code>. <code>argv[0]</code> is the program's name, so <code>./negate 5</code> gives <code>argc == 2</code>.",
-                "<strong>Text is not a number.</strong> <code>argv[1]</code> is the string <code>\"5\"</code>. You must convert it, and you must notice when the conversion fails.",
-                "<strong>Exit status.</strong> What <code>main</code> returns. <code>0</code> means success. The parent will read it.",
-                "<strong>Two output streams.</strong> Results go to standard output, errors go to standard error. They look the same on screen but can be separated."
+              "type": "paragraph",
+              "html": "When you run a program in the terminal\u2014or when <code>calculator</code> starts a child with <code>execv</code>\u2014the words of the command are passed into <code>main</code> using two parameters: <code>argc</code> (argument count) and <code>argv</code> (argument values, an array of strings)."
+            },
+            {
+              "type": "code",
+              "language": "c",
+              "label": "how main receives arguments",
+              "code": "int main(int argc, char *argv[])"
+            },
+            {
+              "type": "paragraph",
+              "html": "If someone runs <code>./negate 5</code>, here is what <code>argc</code> and <code>argv</code> hold:"
+            },
+            {
+              "type": "list",
+              "ordered": false,
+              "items": [
+                "<code>argc</code> is <code>2</code> (because there are 2 words total on the command line).",
+                "<code>argv[0]</code> is <code>\"./negate\"</code> (the program name itself is always slot 0).",
+                "<code>argv[1]</code> is <code>\"5\"</code> (the first actual argument, stored as text!).",
+                "<code>argv[2]</code> is <code>NULL</code> (marks the end of the array)."
               ]
             },
             {
-              type: "exercise",
-              label: "Task: read first",
-              blocks: [
+              "type": "paragraph",
+              "html": "So if <code>negate</code> needs 1 number, <code>argc</code> <strong>must be 2</strong>. Here is the partial code for checking <code>argc</code>:"
+            },
+            {
+              "type": "code",
+              "language": "c",
+              "label": "checking argument count in negate.c",
+              "code": "if (argc != 2) {\n    fprintf(stderr, \"%s: usage: %s <number>\\n\", argv[0], argv[0]);\n    return 1;\n}"
+            },
+            {
+              "type": "note",
+              "variant": "note",
+              "label": "Why fprintf(stderr, ...) and return 1?",
+              "blocks": [
                 {
-                  type: "paragraph",
-                  html: "Open <code>man 3 atoi</code> and <code>man 3 strtol</code>. Answer in writing:"
-                },
-                {
-                  type: "list",
-                  ordered: true,
-                  items: [
-                    "What does <code>atoi</code> return for the text <code>\"abc\"</code>? Can you tell that apart from the text <code>\"0\"</code>?",
-                    "What does <code>strtol</code> store through its second parameter, <code>endptr</code>?",
-                    "How does <code>strtol</code> report that a number was too large?",
-                    "Which two headers will you need? (Check the SYNOPSIS of <code>strtol</code> and the page for <code>errno</code>.)"
-                  ]
+                  "type": "paragraph",
+                  "html": "<code>fprintf(stderr, ...)</code> works just like <code>printf(...)</code>, except it sends the text to the <strong>standard error</strong> stream. Returning <code>1</code> from <code>main</code> tells the parent process that this child failed."
                 }
               ]
             },
             {
-              type: "hint",
-              summary: "Search terms if you want more",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "<code>man 3 errno</code> · <code>man 3 fprintf</code> · “C strtol check whole string was converted” · “C stdout vs stderr”"
-                }
+              "type": "heading",
+              "level": 3,
+              "html": "Step 2: Converting a string like \"5\" into a number (and catching \"abc\")"
+            },
+            {
+              "type": "paragraph",
+              "html": "Right now <code>argv[1]</code> is a string of characters (<code>\"5\"</code>), not a number you can do math on. Why not use <code>atoi(argv[1])</code>? Because if the user types <code>./negate abc</code>, <code>atoi(\"abc\")</code> silently returns <code>0</code>\u2014it can't tell the difference between <code>\"0\"</code> and garbage!"
+            },
+            {
+              "type": "paragraph",
+              "html": "Instead, C gives us <code>strtol</code> (string-to-long, in <code>&lt;stdlib.h&gt;</code>). Let's see how it works in 4 lines of code:"
+            },
+            {
+              "type": "code",
+              "language": "c",
+              "label": "how strtol converts and checks a string",
+              "code": "char *end;\nlong a = strtol(argv[1], &end, 10);"
+            },
+            {
+              "type": "list",
+              "ordered": false,
+              "items": [
+                "<code>argv[1]</code> is the string we want to convert.",
+                "<code>&amp;end</code> gives <code>strtol</code> the address of a character pointer. When <code>strtol</code> finishes reading digits, it makes <code>end</code> point to the <strong>first character it could not convert</strong>.",
+                "<code>10</code> means base-10 (normal decimal numbers)."
               ]
             },
             {
-              type: "heading",
-              level: 4,
-              html: "The skeleton"
+              "type": "paragraph",
+              "html": "Look at what <code>end</code> points to in three different cases:"
             },
             {
-              type: "paragraph",
-              html: "Type this into <code>negate.c</code> and replace each TODO with real code."
-            },
-            {
-              type: "code",
-              language: "c",
-              label: "negate.c",
-              code: String.raw`#include <stdio.h>
-/* TODO: strtol lives in another header. Which one? (man 3 strtol) */
-/* TODO: you also want errno and ERANGE. Which header? (man 3 errno) */
-
-int main(int argc, char *argv[]) {
-    /* TODO 1: negate needs exactly one argument.
-       If argc says otherwise, print a usage message to stderr and return 1. */
-
-    /* TODO 2: convert argv[1] to a long with strtol.
-       Reject text that is not a complete, in-range integer:
-       print an error to stderr and return 1. */
-
-    /* TODO 3: print "Result: " and the negated number, then return 0. */
-}`
-            },
-            {
-              type: "heading",
-              level: 4,
-              html: "Hints, one at a time"
-            },
-            {
-              type: "hint",
-              summary: "TODO 1, hint 1: counting",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "Remember that <code>argv[0]</code> counts. One real argument means what value of <code>argc</code>?"
-                }
-              ]
-            },
-            {
-              type: "hint",
-              summary: "TODO 1, hint 2: printing to stderr",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "Use <code>fprintf</code> with <code>stderr</code> as its first argument. You can use <code>argv[0]</code> inside the message so it names the program."
-                }
-              ]
-            },
-            {
-              type: "hint",
-              summary: "TODO 2, hint 1: the shape",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "Declare <code>char *end;</code> and pass <code>&amp;end</code> (the address of that pointer) as the second argument. The base is 10. After the call, <code>end</code> points at the first character <code>strtol</code> could not use."
-                }
-              ]
-            },
-            {
-              type: "hint",
-              summary: "TODO 2, hint 2: spotting bad input",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "Two things go wrong. If <code>end</code> is still equal to <code>argv[1]</code>, nothing was converted (<code>abc</code>). If <code>*end</code> is not the end-of-string character <code>'\\0'</code>, something followed the number (<code>12abc</code>)."
-                }
-              ]
-            },
-            {
-              type: "hint",
-              summary: "TODO 2, hint 3: too large",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "Overflow is reported through <code>errno</code> being set to <code>ERANGE</code>. Because <code>errno</code> may hold an old value, set <code>errno = 0</code> just before calling <code>strtol</code> and check it right after. The ERRORS section of the man page says the same."
-                }
-              ]
-            },
-            {
-              type: "hint",
-              summary: "TODO 3: printing",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "A <code>long</code> is printed with <code>%ld</code>. Negation is the unary minus. Do not forget the newline."
-                }
-              ]
-            },
-            {
-              type: "heading",
-              level: 4,
-              html: "Compile and test"
-            },
-            {
-              type: "code",
-              language: "shell",
-              label: "terminal",
-              code: String.raw`$ gcc -Wall -Wextra -o negate negate.c`
-            },
-            {
-              type: "paragraph",
-              html: "Those flags are explained in Phase 4. For now, treat any warning as a real problem. Then check every row. Run each command and then <code>echo $?</code> to see the exit status."
-            },
-            {
-              type: "table",
-              head: ["You run", "Expected", "Exit status"],
-              rows: [
-                ["<code>./negate 5</code>", "<code>Result: -5</code>", "0"],
-                ["<code>./negate -12</code>", "<code>Result: 12</code>", "0"],
-                ["<code>./negate 0</code>", "<code>Result: 0</code>", "0"],
-                ["<code>./negate abc</code>", "an error message", "1"],
-                ["<code>./negate 12abc</code>", "an error message", "1"],
-                ["<code>./negate</code>", "a usage message", "1"],
-                ["<code>./negate 1 2</code>", "a usage message", "1"],
-                ["<code>./negate 99999999999999999999</code>", "an error message", "1"]
-              ]
-            },
-            {
-              type: "note",
-              variant: "note",
-              label: "Prove stderr is separate",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "Run <code>./negate abc 2&gt;/dev/null</code>. Where did your error message go? <code>2&gt;</code> redirects stream number 2, standard error, to a place that discards everything. Then run <code>./negate 5 2&gt;/dev/null</code>. The result still shows, because it travels on stream 1."
-                }
-              ]
-            },
-            {
-              type: "selfcheck",
-              items: [
-                {
-                  question: "Why <code>argc == 2</code> for one argument?",
-                  answer: "Because <code>argv[0]</code> is the program's name and counts as the first word."
-                },
-                {
-                  question: "Why <code>strtol</code> and not <code>atoi</code>?",
-                  answer: "<code>atoi</code> returns 0 for bad text, which you cannot tell from a real 0. <code>strtol</code> tells you where it stopped and sets <code>errno</code> on overflow, so you can detect bad input."
-                },
-                {
-                  question: "Which part of this program will be identical in <code>add</code>, <code>sub</code> and <code>multiply</code>?",
-                  answer: "The conversion and its checks. You will need it twice per file, which is a hint about how to organise it in 3.2."
-                }
-              ]
-            },
-            {
-              type: "checkpoint",
-              title: "Checkpoint",
-              items: [
-                "<code>negate</code> compiles with no warnings.",
-                "All eight rows of the table behave as expected, including the exit statuses.",
-                "I can explain why <code>strtol</code> is used and how the error cases are detected.",
-                "I proved that errors go to stderr with <code>2&gt;/dev/null</code>."
-              ]
-            }
-          ]
-        },
-        {
-          id: "s3-2",
-          no: "3.2",
-          title: "add, sub and multiply",
-          blocks: [
-            {
-              type: "paragraph",
-              html: "<strong>Goal:</strong> three more children, written mostly on your own. You already know every idea; this step is about changing them correctly."
-            },
-            {
-              type: "heading",
-              level: 4,
-              html: "What is different from negate"
-            },
-            {
-              type: "table",
-              head: ["Program", "Needs <code>argc</code> equal to", "Numbers to convert", "Result line"],
-              rows: [
-                ["<code>add</code>", "3", "two", "<code>Result: A + B</code>"],
-                ["<code>sub</code>", "3", "two", "<code>Result: A - B</code> (order matters)"],
-                ["<code>multiply</code>", "3", "two", "<code>Result: A * B</code>"]
-              ]
-            },
-            {
-              type: "paragraph",
-              html: "You convert two strings, and both conversions must be checked. Writing the same ten lines twice in one file is a bad sign. Think about how a small function could do it."
-            },
-            {
-              type: "heading",
-              level: 4,
-              html: "Hints, one at a time"
-            },
-            {
-              type: "hint",
-              summary: "Hint 1: structure",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "Write a helper function above <code>main</code> that converts one string and tells you whether it worked. <code>main</code> then calls it twice and stops at the first failure."
-                }
-              ]
-            },
-            {
-              type: "hint",
-              summary: "Hint 2: the helper's signature",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "A function can return only one value, but you need two things back: “did it work” and “the number”. Return the first and hand back the second through a pointer parameter:"
-                },
-                {
-                  type: "code",
-                  language: "c",
-                  label: "signature only",
-                  code: String.raw`/* Convert text to a long. Return 0 on success and store the number in *out.
-   Return -1 if text is not a complete, in-range integer. */
-static int parse_long(const char *text, long *out);`
-                },
-                {
-                  type: "paragraph",
-                  html: "You write the body. It is the code from <code>negate</code>, moved."
-                }
-              ]
-            },
-            {
-              type: "hint",
-              summary: "Hint 3: using it",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "Declare <code>long a, b;</code> and call the helper with <code>&amp;a</code> and <code>&amp;b</code>. The <code>&amp;</code> gives the function the address where it should write the answer."
-                }
-              ]
-            },
-            {
-              type: "heading",
-              level: 4,
-              html: "Test tables"
-            },
-            {
-              type: "paragraph",
-              html: "Test each program alone, and check <code>echo $?</code> for the failing rows."
-            },
-            {
-              type: "table",
-              head: ["You run", "Expected", "Exit"],
-              rows: [
-                ["<code>./add 2 3</code>", "<code>Result: 5</code>", "0"],
-                ["<code>./add -4 9</code>", "<code>Result: 5</code>", "0"],
-                ["<code>./add 2 x</code>", "error message", "1"],
-                ["<code>./add 2</code>", "usage message", "1"],
-                ["<code>./sub 10 4</code>", "<code>Result: 6</code>", "0"],
-                ["<code>./sub 4 10</code>", "<code>Result: -6</code>", "0"],
-                ["<code>./sub 5 -3</code>", "<code>Result: 8</code>", "0"],
-                ["<code>./sub x 1</code>", "error message", "1"],
-                ["<code>./multiply 6 7</code>", "<code>Result: 42</code>", "0"],
-                ["<code>./multiply -3 4</code>", "<code>Result: -12</code>", "0"],
-                ["<code>./multiply 0 99</code>", "<code>Result: 0</code>", "0"],
-                ["<code>./multiply 1 2 3</code>", "usage message", "1"]
-              ]
-            },
-            {
-              type: "hint",
-              summary: "If a row fails",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "Read the exact output, then ask: did the program reach the line I think it reached? Add a temporary <code>fprintf(stderr, ...)</code> to see. Compare with <code>negate</code>, which you know works."
-                }
-              ]
-            },
-            {
-              type: "exercise",
-              label: "Stretch",
-              blocks: [
-                {
-                  type: "list",
-                  ordered: true,
-                  items: [
-                    "<strong>Overflow.</strong> <code>./multiply 9999999999 9999999999</code> may print a nonsense number. Why? Search for “gcc __builtin_mul_overflow” and make the program report an error instead.",
-                    "<strong>One header.</strong> Move <code>parse_long</code> into a file <code>parse.h</code> and <code>#include \"parse.h\"</code> from all four children. Predict whether your compile command has to change, then try it. What does that tell you about when a header file is read?"
-                  ]
-                }
-              ]
-            },
-            {
-              type: "checkpoint",
-              title: "Checkpoint",
-              items: [
-                "<code>add</code> compiles cleanly and passes its rows.",
-                "<code>sub</code> compiles cleanly and passes its rows, including the order of operands.",
-                "<code>multiply</code> compiles cleanly and passes its rows.",
-                "I used a helper function instead of repeating the conversion code."
-              ]
-            }
-          ]
-        },
-        {
-          id: "s3-3",
-          no: "3.3",
-          title: "calculator.c, part A: the prompt",
-          blocks: [
-            {
-              type: "paragraph",
-              html: "<strong>Goal:</strong> a program that shows <code>calc&gt; </code>, reads a line, splits it into words and prints them back. It does not calculate or fork yet. Splitting words correctly is half of the parent's job, so test it hard."
-            },
-            {
-              type: "heading",
-              level: 4,
-              html: "Ideas you need"
-            },
-            {
-              type: "list",
-              ordered: false,
-              items: [
-                "<strong>A loop that waits for input.</strong> Read a line, handle it, repeat, until the user says to stop.",
-                "<strong>Reading a line.</strong> <code>fgets</code> reads one line from a stream into a char array. It returns <code>NULL</code> when there is no more input, which is what <kbd>Ctrl</kbd>+<kbd>D</kbd> produces.",
-                "<strong>Splitting into words.</strong> <code>strtok</code> cuts a string at delimiter characters. It <em>modifies</em> the string and gives you pointers into it.",
-                "<strong>Buffered output.</strong> A prompt has no newline, so it may sit in the output buffer. Flushing makes it appear."
-              ]
-            },
-            {
-              type: "exercise",
-              label: "Task: read first",
-              blocks: [
-                {
-                  type: "list",
-                  ordered: true,
-                  items: [
-                    "<code>man 3 fgets</code>: what are its three parameters, and what does it return at end of input? Does it keep the newline?",
-                    "<code>man 3 strtok</code>: what does the first call look like, and how do the following calls differ? Which header is needed?",
-                    "<code>man 3 strcmp</code>: what does it return when two strings are equal?"
-                  ]
-                }
-              ]
-            },
-            {
-              type: "hint",
-              summary: "Search terms if you want more",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "“C read a line from stdin fgets” · “C strtok example split by spaces” · “C fflush stdout prompt” · “C compare strings strcmp equals zero”"
-                }
-              ]
-            },
-            {
-              type: "heading",
-              level: 4,
-              html: "The skeleton"
-            },
-            {
-              type: "code",
-              language: "c",
-              label: "calculator.c",
-              code: "#include <stdio.h>\n/* TODO: strtok and strcmp live in which header? (man 3 strtok) */\n\n#define MAX_LINE   256\n#define MAX_TOKENS 16\n\nint main(void) {\n    char line[MAX_LINE];\n\n    while (1) {\n        /* TODO A1: print the prompt \"calc> \" and make sure it appears\n           before the program waits for input. */\n\n        /* TODO A2: read a line into `line`. If there is no more input\n           (Ctrl+D), print a newline and leave the loop. */\n\n        char *tokens[MAX_TOKENS + 1];   /* one spare slot: you will see why in 3.5 */\n        int ntokens = 0;\n        /* TODO A3: split `line` into words. Put pointers to them in tokens[]\n           and count them in ntokens. Stop at MAX_TOKENS words. Delimiters:\n           space, tab, and the newline that fgets keeps. */\n\n        /* TODO A4: an empty line -> go round the loop again.\n           The word \"exit\" or \"quit\" as the first word -> leave the loop. */\n\n        /* TODO A5 (temporary): print every word on its own line,\n           so you can see how the line was split. */\n    }\n    return 0;\n}"
-            },
-            {
-              type: "heading",
-              level: 4,
-              html: "Hints, one at a time"
-            },
-            {
-              type: "hint",
-              summary: "A1: the prompt",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "<code>printf</code> without a newline may leave the text in a buffer. <code>fflush(stdout)</code> sends it out immediately. Some systems flush for you when you read input and some do not, so always flush a prompt."
-                }
-              ]
-            },
-            {
-              type: "hint",
-              summary: "A2: reading",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "The three arguments are the array, how many characters it can hold (use <code>sizeof line</code> so the number cannot go out of date) and the stream, <code>stdin</code>. Check the return value against <code>NULL</code>."
-                }
-              ]
-            },
-            {
-              type: "hint",
-              summary: "A3, hint 1: the loop shape",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "The first call to <code>strtok</code> receives the string. Every call after that receives <code>NULL</code> instead, which means “carry on from where you stopped”. It returns <code>NULL</code> when there are no more words. A <code>for</code> loop with the first call in its initialiser and the second in its step works well."
-                }
-              ]
-            },
-            {
-              type: "hint",
-              summary: "A3, hint 2: the delimiter string",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "The delimiters are given as a string containing every separator character. Write a space, a tab (<code>\\t</code>) and a newline (<code>\\n</code>) inside one string. Including the newline is what removes the one <code>fgets</code> left at the end."
-                }
-              ]
-            },
-            {
-              type: "hint",
-              summary: "A4: comparing words",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "<code>strcmp</code> returns <code>0</code> when the strings are equal, so you test <code>== 0</code>. Using <code>==</code> on two strings compares addresses, not text, and is almost never what you want. Check <code>ntokens</code> before you look at <code>tokens[0]</code>."
-                }
-              ]
-            },
-            {
-              type: "heading",
-              level: 4,
-              html: "Run it and compare"
-            },
-            {
-              type: "paragraph",
-              html: "Compile with <code>gcc -Wall -Wextra -o calculator calculator.c</code>, run <code>./calculator</code> and type the lines after each prompt. This is what you should see:"
-            },
-            {
-              type: "code",
-              language: "shell",
-              label: "expected session",
-              code: String.raw`$ ./calculator
-calc> add 2 3
-add
-2
-3
-calc>    multiply   4   5
-multiply
-4
-5
-calc>
-calc> exit
-$ ./calculator
-calc> <press Ctrl+D>
-$`
-            },
-            {
-              type: "selfcheck",
-              items: [
-                {
-                  question: "Why do we include <code>\\n</code> in the list of delimiters?",
-                  answer: "<code>fgets</code> keeps the newline at the end of the line. Without it the last word would be <code>\"3\\n\"</code> instead of <code>\"3\"</code>, and later <code>strtol</code> would reject it."
-                },
-                {
-                  question: "Why is the tokens array one element bigger than <code>MAX_TOKENS</code>?",
-                  answer: "You will see in 3.5: the array handed to <code>exec</code> must end with <code>NULL</code>. The spare slot is where that goes."
-                }
-              ]
-            },
-            {
-              type: "checkpoint",
-              title: "Checkpoint",
-              items: [
-                "The prompt appears, repeats, and the program exits on <code>exit</code>, <code>quit</code> and <kbd>Ctrl</kbd>+<kbd>D</kbd>.",
-                "Extra spaces and tabs between words do not matter; a blank line just shows the prompt again.",
-                "I can explain what <code>strtok</code> does to the string it is given."
-              ]
-            }
-          ]
-        },
-        {
-          id: "s3-4",
-          no: "3.4",
-          title: "calculator.c, part B: check the line",
-          blocks: [
-            {
-              type: "paragraph",
-              html: "<strong>Goal:</strong> decide whether a line is a valid request <em>before</em> any process exists. Wrong lines get the exact messages from the blueprint. Right lines print a temporary “OK”."
-            },
-            {
-              type: "heading",
-              level: 4,
-              html: "Ideas you need"
-            },
-            {
-              type: "list",
-              ordered: false,
-              items: [
-                "<strong>Data instead of if-chains.</strong> The four operations differ only by name and argument count. Put those two facts in a table (an array of structs) and look the word up. Adding a fifth operation later becomes one new row.",
-                "<strong>Arguments are the words after the first.</strong> With <code>ntokens</code> words, there are <code>ntokens - 1</code> arguments.",
-                "The parent only checks the <em>count</em>. It does not check whether <code>abc</code> is a number. That is the child's job, as the contract says."
-              ]
-            },
-            {
-              type: "exercise",
-              label: "Task: read first",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "If you have not used structs in C yet, search for “C array of structs initialiser” and “C number of elements in an array sizeof”. Write down the answers to both before you start coding."
-                }
-              ]
-            },
-            {
-              type: "heading",
-              level: 4,
-              html: "The additions"
-            },
-            {
-              type: "code",
-              language: "c",
-              label: "calculator.c (new parts)",
-              code: String.raw`struct operation {
-    const char *name;   /* what the user types; also the program's name */
-    int nargs;          /* how many arguments it needs */
-};
-
-/* TODO B1: create the table: an array of struct operation with the four
-   operations and their argument counts. */
-
-/* ...inside the loop, after the exit/quit check from part A: */
-
-    /* TODO B2: look tokens[0] up in the table.
-       Not found -> print the "invalid operator" message and go round again. */
-
-    /* TODO B3: compare ntokens - 1 with the operation's nargs.
-       Different -> print the "needs N argument(s), got M" message and go round again. */
-
-    /* TODO B4 (temporary): print "OK: would run <name> with <n> argument(s)" */`
-            },
-            {
-              type: "heading",
-              level: 4,
-              html: "Hints, one at a time"
-            },
-            {
-              type: "hint",
-              summary: "B1: the table",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "Declare it <code>static const</code> above <code>main</code>. Each row is <code>{\"name\", count}</code>. To get the number of rows without hard-coding it, divide the size of the whole array by the size of one element."
-                }
-              ]
-            },
-            {
-              type: "hint",
-              summary: "B2: the lookup",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "Loop over the rows and use <code>strcmp</code>. Keep a pointer to the matching row, or <code>NULL</code> if none matched. After the loop one <code>if</code> handles the not-found case."
-                }
-              ]
-            },
-            {
-              type: "hint",
-              summary: "B3 and the messages",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "Print with <code>%s</code> for the operator name and <code>%d</code> for counts. The wording must match the blueprint exactly, including <code>argument(s)</code> and the double quotes around the invalid operator, which you write as <code>\\\"</code> inside a C string."
-                }
-              ]
-            },
-            {
-              type: "table",
-              head: ["You type", "Expected"],
-              rows: [
-                ["<code>add 2 3</code>", "<code>OK: would run add with 2 argument(s)</code>"],
+              "type": "table",
+              "head": [
+                "Input string",
+                "What strtol reads",
+                "What *end is afterwards",
+                "Valid?"
+              ],
+              "rows": [
                 [
-                  "<code>negate 7</code>",
-                  "<code>OK: would run negate with 1 argument(s)</code>"
+                  "<code>\"42\"</code>",
+                  "Reads <code>42</code>",
+                  "<code>'\\0'</code> (the end-of-string null byte)",
+                  "<strong>Yes!</strong> It reached the end of the string."
                 ],
                 [
-                  "<code>add 2</code>",
-                  "<code>Operation cannot execute: add needs 2 argument(s), got 1</code>"
+                  "<code>\"12abc\"</code>",
+                  "Reads <code>12</code>, stops at <code>a</code>",
+                  "<code>'a'</code> (not <code>'\\0'</code>)",
+                  "<strong>No!</strong> Leftover letters at the end."
                 ],
                 [
-                  "<code>negate</code>",
-                  "<code>Operation cannot execute: negate needs 1 argument(s), got 0</code>"
-                ],
-                [
-                  "<code>multiply 1 2 3</code>",
-                  "<code>Operation cannot execute: multiply needs 2 argument(s), got 3</code>"
-                ],
-                [
-                  "<code>divide 4 2</code>",
-                  "<code>Operation cannot execute: invalid operator \"divide\"</code>"
-                ],
-                [
-                  "<code>ADD 2 3</code>",
-                  "<code>Operation cannot execute: invalid operator \"ADD\"</code>"
-                ],
-                [
-                  "<code>add 2 abc</code>",
-                  "<code>OK: would run add with 2 argument(s)</code> (letters are the child's problem)"
+                  "<code>\"abc\"</code>",
+                  "Reads no digits at all",
+                  "<code>end == argv[1]</code> (never moved)",
+                  "<strong>No!</strong> Nothing was converted."
                 ]
               ]
             },
             {
-              type: "checkpoint",
-              title: "Checkpoint",
-              items: [
-                "All eight rows behave as shown, and the program still quits cleanly.",
-                "The operations live in a table, not in a chain of <code>if</code>s.",
-                "I can explain why <code>add 2 abc</code> passes here."
-              ]
-            }
-          ]
-        },
-        {
-          id: "s3-5",
-          no: "3.5",
-          title: "calculator.c, part C: fork, exec, wait",
-          blocks: [
-            {
-              type: "paragraph",
-              html: "<strong>Goal:</strong> replace the temporary “OK” with the real thing: start the child, wait for it, report how it ended. This is the heart of the project and everything you did in Phase 2 comes together."
+              "type": "paragraph",
+              "html": "Also, if someone types a huge number that doesn't fit in a <code>long</code> (like <code>99999999999999999999</code>), <code>strtol</code> sets the global variable <code>errno</code> (from <code>&lt;errno.h&gt;</code>) to <code>ERANGE</code>. Putting that together gives us a clean, reusable check:"
             },
             {
-              type: "heading",
-              level: 4,
-              html: "The plan for one function"
+              "type": "code",
+              "language": "c",
+              "label": "complete number conversion check",
+              "code": "char *end;\nerrno = 0;\nlong a = strtol(argv[1], &end, 10);\n\nif (errno == ERANGE || end == argv[1] || *end != '\\0') {\n    fprintf(stderr, \"%s: invalid argument\\n\", argv[0]);\n    return 1;\n}"
             },
             {
-              type: "paragraph",
-              html: "Put the work in a function so the loop stays readable. It runs once per valid line."
+              "type": "heading",
+              "level": 3,
+              "html": "Step 3: Put negate.c together"
             },
             {
-              type: "code",
-              language: "c",
-              label: "calculator.c (new function)",
-              code: String.raw`static void run_child(const char *name, char *tokens[], int ntokens) {
-    /* TODO C1: build the string "./name" in a char array. */
-
-    /* TODO C2: prepare the child's argument array: the path first, then the
-       user's arguments, then NULL. */
-
-    /* TODO C3: flush stdout, then fork. If fork fails, print why and return. */
-
-    /* TODO C4: in the child only: replace it with the program using execv.
-       If execv returns, it failed: print the reason and leave with status 127. */
-
-    /* TODO C5: in the parent only: wait for that child and print one of the
-       three report lines from the blueprint, including the child's PID. */
-}`
-            },
-            {
-              type: "paragraph",
-              html: "In the loop, call <code>run_child(op-&gt;name, tokens, ntokens)</code> instead of printing the temporary OK line."
-            },
-            {
-              type: "exercise",
-              label: "Task: read first",
-              blocks: [
+              "type": "exercise",
+              "label": "Task: write and test negate.c",
+              "blocks": [
                 {
-                  type: "list",
-                  ordered: true,
-                  items: [
-                    "<code>man 3 snprintf</code>: how is it different from <code>printf</code>, and why is it safer than <code>sprintf</code>?",
-                    "<code>man 3 exec</code>: which function takes a path and an array? What must the last element of the array be?",
-                    "<code>man 2 waitpid</code>: which macro tells you the child ended normally? Which one gives the exit code? Which two describe a child killed by a signal?",
-                    "<code>man 2 _exit</code> and <code>man 3 exit</code>: what extra does <code>exit</code> do that <code>_exit</code> does not?"
-                  ]
-                }
-              ]
-            },
-            {
-              type: "heading",
-              level: 4,
-              html: "Hints, one at a time"
-            },
-            {
-              type: "hint",
-              summary: "C1: the path",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "<code>snprintf</code> works like <code>printf</code> but writes into a char array. Give it the array, its size (<code>sizeof</code>) and a format such as <code>\"./%s\"</code>. An array of 64 characters is plenty."
-                }
-              ]
-            },
-            {
-              type: "hint",
-              summary: "C2, hint 1: what the array must look like",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "For <code>add 2 3</code> the child must receive exactly four slots: <code>\"./add\"</code>, <code>\"2\"</code>, <code>\"3\"</code>, then <code>NULL</code>. It is the same <code>argv</code> that <code>add</code>'s <code>main</code> will see."
-                }
-              ]
-            },
-            {
-              type: "hint",
-              summary: "C2, hint 2: a shortcut",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "You already have <code>tokens</code>: <code>{\"add\", \"2\", \"3\"}</code>. Only the first element is wrong. And the spare slot you reserved in 3.3 is exactly where the <code>NULL</code> belongs. You do not need a second array."
-                }
-              ]
-            },
-            {
-              type: "hint",
-              summary: "C3: fork",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "Call <code>fflush(stdout)</code> first. You saw in 2.2 what happens to unsent output when you fork. Then check the result three ways: negative, zero, positive. Use <code>perror</code> for the failure message."
-                }
-              ]
-            },
-            {
-              type: "hint",
-              summary: "C4: the child branch",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "In the zero branch call <code>execv</code> with your path and array. Anything written after it runs only on failure: print with <code>perror(path)</code> and call <code>_exit(127)</code>."
+                  "type": "paragraph",
+                  "html": "Open <code>~/calc_project/negate.c</code> and type in this guided structure. Fill in the 3 short <code>TODO</code> lines using the code blocks above:"
                 },
                 {
-                  type: "paragraph",
-                  html: "<strong>Why <code>_exit</code>?</strong> <code>exit</code> flushes the C library's output buffers. A forked child owns a copy of the parent's buffers, so flushing them in the child can print the parent's pending text a second time. <code>_exit</code> leaves immediately."
-                }
-              ]
-            },
-            {
-              type: "hint",
-              summary: "C5, hint 1: collecting the result",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "Call <code>waitpid(pid, &amp;status, 0)</code> and check that it did not return -1. Then ask <code>WIFEXITED(status)</code> first. Only if that is true does <code>WEXITSTATUS(status)</code> mean anything."
-                }
-              ]
-            },
-            {
-              type: "hint",
-              summary: "C5, hint 2: three outcomes",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "One <code>if</code>/<code>else if</code>/<code>else</code> covers it: exited with 0, exited with something else, or did not exit normally (killed by a signal; the macro that gives the signal number is in the man page you read)."
-                }
-              ]
-            },
-            {
-              type: "heading",
-              level: 4,
-              html: "Test it"
-            },
-            {
-              type: "paragraph",
-              html: "You need <code>add</code>, <code>sub</code>, <code>multiply</code> and <code>negate</code> compiled in the same folder. Your PIDs will differ."
-            },
-            {
-              type: "code",
-              language: "shell",
-              label: "expected session",
-              code: String.raw`$ ./calculator
-calc> add 2 3
-Result: 5
-child process exited successfully (PID 4243)
-calc> sub 10 4
-Result: 6
-child process exited successfully (PID 4247)
-calc> negate 5
-Result: -5
-child process exited successfully (PID 4251)
-calc> add 2 abc
-./add: invalid argument
-child process exited unsuccessfully with status 1 (PID 4255)
-calc> multiply 6
-Operation cannot execute: multiply needs 2 argument(s), got 1
-calc> exit
-$`
-            },
-            {
-              type: "paragraph",
-              html: "The line <code>./add: invalid argument</code> is the child's own error message, so your wording can differ. Every other line must match."
-            },
-            {
-              type: "exercise",
-              label: "Two experiments",
-              blocks: [
-                {
-                  type: "list",
-                  ordered: true,
-                  items: [
-                    "<strong>A child that cannot start.</strong> In another terminal, or after quitting, rename a program: <code>mv negate negate.off</code>. Run the calculator and type <code>negate 3</code>. What do you see, and what status is reported? Then undo with <code>mv negate.off negate</code>.",
-                    "<strong>The PID is real.</strong> Note the PID printed after a calculation. Is it the same number every time? Does it ever match <code>echo $$</code> in your shell?"
-                  ]
+                  "type": "code",
+                  "language": "c",
+                  "label": "negate.c (guided template)",
+                  "code": "#include <stdio.h>\n#include <stdlib.h>\n#include <errno.h>\n\nint main(int argc, char *argv[]) {\n    /* 1. Check that the user passed 1 argument (so argc is 2) */\n    if (argc != 2) {\n        fprintf(stderr, \"%s: usage: %s <number>\\n\", argv[0], argv[0]);\n        return 1;\n    }\n\n    /* 2. Convert argv[1] to a long and check for invalid input */\n    char *end;\n    errno = 0;\n    long a = strtol(argv[1], &end, 10);\n\n    if (/* TODO: check if errno == ERANGE, or end == argv[1], or *end != '\\0' */) {\n        fprintf(stderr, \"%s: invalid argument\\n\", argv[0]);\n        return 1;\n    }\n\n    /* 3. Print the negated number and return 0 for success */\n    /* TODO: use printf(\"Result: %ld\\n\", -a); */\n    /* TODO: return 0; */\n}"
                 },
                 {
-                  type: "hint",
-                  summary: "What to expect",
-                  blocks: [
+                  "type": "paragraph",
+                  "html": "Now compile and test it directly in your terminal before moving on:"
+                },
+                {
+                  "type": "code",
+                  "language": "shell",
+                  "label": "compile and test negate",
+                  "code": "$ gcc -Wall -Wextra -o negate negate.c\n$ ./negate 5\nResult: -5\n$ echo $?\n0\n$ ./negate -12\nResult: 12\n$ ./negate abc\n./negate: invalid argument\n$ echo $?\n1"
+                },
+                {
+                  "type": "hint",
+                  "summary": "Full solution check for negate.c (open if stuck)",
+                  "blocks": [
                     {
-                      type: "paragraph",
-                      html: "1: the child prints the reason from <code>perror</code> (<code>No such file or directory</code>) and the parent reports status 127. 2: a new child means a new PID every time. Neither is your shell's PID, because the parent of the child is the calculator, and the parent of the calculator is the shell."
+                      "type": "paragraph",
+                      "html": "Your <code>if</code> condition is <code>if (errno == ERANGE || end == argv[1] || *end != '\\0')</code>, and the last two lines of <code>main</code> are <code>printf(\"Result: %ld\\n\", -a);</code> followed by <code>return 0;</code>."
                     }
                   ]
                 }
               ]
             },
             {
-              type: "selfcheck",
-              items: [
-                {
-                  question: "Which code runs in the child, which in the parent, and which in both?",
-                  answer: "Both: everything up to and including <code>fork</code>. Child only: the branch where <code>fork</code> returned 0 (<code>execv</code> and its failure handling). Parent only: the branch with a positive PID (<code>waitpid</code> and the report)."
-                },
-                {
-                  question: "What happens to the child process's PID when it calls <code>execv</code>?",
-                  answer: "It stays the same. The program inside the process changes."
-                },
-                {
-                  question: "Why must the parent call <code>waitpid</code> before printing the report?",
-                  answer: "The report needs the child's exit status, and the status only exists once the child has ended."
-                }
-              ]
-            },
-            {
-              type: "checkpoint",
-              title: "Checkpoint",
-              items: [
-                "A valid line starts a child, shows its result, and reports success with the PID.",
-                "A failing child (<code>add 2 abc</code>) is reported as unsuccessful with status 1.",
-                "A missing program is reported with status 127.",
-                "The prompt always comes back <em>after</em> the child's output and the report line.",
-                "I can explain why <code>_exit</code> is used after a failed <code>execv</code>."
+              "type": "checkpoint",
+              "title": "Checkpoint",
+              "items": [
+                "<code>negate.c</code> compiles with no warnings.",
+                "<code>./negate 5</code> prints <code>Result: -5</code> and <code>echo $?</code> prints <code>0</code>.",
+                "<code>./negate abc</code> prints an error to <code>stderr</code> and <code>echo $?</code> prints <code>1</code>."
               ]
             }
           ]
         },
         {
-          id: "s3-6",
-          no: "3.6",
-          title: "Polish it, break it, look inside",
-          blocks: [
+          "id": "s3-2",
+          "no": "3.2",
+          "title": "add.c, sub.c and multiply.c",
+          "blocks": [
             {
-              type: "paragraph",
-              html: "The program works on the lines you imagined. Now find out what it does with the lines you did not."
+              "type": "lede",
+              "html": "Now we build the three two-number programs: <code>add.c</code>, <code>sub.c</code>, and <code>multiply.c</code>. They are almost identical to <code>negate.c</code>\u2014the only difference is that they take <strong>two</strong> numbers instead of one."
             },
             {
-              type: "heading",
-              level: 4,
-              html: "Try to break it"
+              "type": "heading",
+              "level": 3,
+              "html": "Using a small helper function so we don't repeat ourselves"
             },
             {
-              type: "table",
-              head: ["You type", "What should happen"],
-              rows: [
+              "type": "paragraph",
+              "html": "In <code>add.c</code>, we have to convert <strong>both</strong> <code>argv[1]</code> and <code>argv[2]</code> using <code>strtol</code>. Instead of pasting the <code>strtol</code> check twice, we can put it in a tiny helper function right above <code>main</code>:"
+            },
+            {
+              "type": "code",
+              "language": "c",
+              "label": "the parse_long helper function",
+              "code": "/* Converts `text` into a long and stores it in `*out`.\n   Returns 0 on success, or -1 if `text` is not a valid integer. */\nstatic int parse_long(const char *text, long *out) {\n    char *end;\n    errno = 0;\n    long val = strtol(text, &end, 10);\n    if (errno == ERANGE || end == text || *end != '\\0') {\n        return -1;\n    }\n    *out = val;\n    return 0;\n}"
+            },
+            {
+              "type": "paragraph",
+              "html": "Look at how clean <code>main</code> becomes when we use <code>parse_long</code>: we just pass <code>argv[1]</code> with <code>&amp;a</code>, and <code>argv[2]</code> with <code>&amp;b</code>!"
+            },
+            {
+              "type": "heading",
+              "level": 3,
+              "html": "Guided template for add.c"
+            },
+            {
+              "type": "exercise",
+              "label": "Task: build add.c, then adapt it for sub.c and multiply.c",
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "html": "1. Open <code>~/calc_project/add.c</code> and complete the guided code below:"
+                },
+                {
+                  "type": "code",
+                  "language": "c",
+                  "label": "add.c (guided template)",
+                  "code": "#include <stdio.h>\n#include <stdlib.h>\n#include <errno.h>\n\nstatic int parse_long(const char *text, long *out) {\n    char *end;\n    errno = 0;\n    long val = strtol(text, &end, 10);\n    if (errno == ERANGE || end == text || *end != '\\0') {\n        return -1;\n    }\n    *out = val;\n    return 0;\n}\n\nint main(int argc, char *argv[]) {\n    /* 1. add needs 2 numbers, so argc must be 3 (program name + 2 args) */\n    if (argc != 3) {\n        fprintf(stderr, \"%s: usage: %s <a> <b>\\n\", argv[0], argv[0]);\n        return 1;\n    }\n\n    /* 2. Convert both argv[1] and argv[2] using parse_long */\n    long a, b;\n    if (parse_long(argv[1], &a) != 0 || parse_long(argv[2], &b) != 0) {\n        fprintf(stderr, \"%s: invalid argument\\n\", argv[0]);\n        return 1;\n    }\n\n    /* 3. Print the sum and return 0 */\n    /* TODO: print \"Result: %ld\\n\" with a + b */\n    return 0;\n}"
+                },
+                {
+                  "type": "paragraph",
+                  "html": "2. Once <code>add.c</code> is done, copy its structure into <code>sub.c</code> and <code>multiply.c</code>. The <strong>only</strong> thing that changes in <code>sub.c</code> and <code>multiply.c</code> is the arithmetic operator inside <code>printf</code>:"
+                },
+                {
+                  "type": "table",
+                  "head": [
+                    "File",
+                    "printf line in main"
+                  ],
+                  "rows": [
+                    [
+                      "<code>add.c</code>",
+                      "<code>printf(\"Result: %ld\\n\", a + b);</code>"
+                    ],
+                    [
+                      "<code>sub.c</code>",
+                      "<code>printf(\"Result: %ld\\n\", a - b);</code>"
+                    ],
+                    [
+                      "<code>multiply.c</code>",
+                      "<code>printf(\"Result: %ld\\n\", a * b);</code>"
+                    ]
+                  ]
+                },
+                {
+                  "type": "paragraph",
+                  "html": "3. Compile and test all three in your terminal:"
+                },
+                {
+                  "type": "code",
+                  "language": "shell",
+                  "label": "compile and test the children",
+                  "code": "$ gcc -Wall -Wextra -o add add.c\n$ gcc -Wall -Wextra -o sub sub.c\n$ gcc -Wall -Wextra -o multiply multiply.c\n$ ./add 2 3\nResult: 5\n$ ./sub 10 4\nResult: 6\n$ ./multiply 6 7\nResult: 42\n$ ./add 2 abc\n./add: invalid argument\n$ echo $?\n1"
+                }
+              ]
+            },
+            {
+              "type": "checkpoint",
+              "title": "Checkpoint",
+              "items": [
+                "<code>add</code>, <code>sub</code>, and <code>multiply</code> all compile cleanly with <code>-Wall -Wextra</code>.",
+                "All four child programs (<code>add</code>, <code>sub</code>, <code>multiply</code>, <code>negate</code>) work when run directly from the terminal and return exit status <code>1</code> on bad input."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "s3-3",
+          "no": "3.3",
+          "title": "calculator.c Part A: the prompt & splitting words",
+          "blocks": [
+            {
+              "type": "lede",
+              "html": "All four child programs are ready! Now we start building the parent program, <code>calculator.c</code>. In Part A, we will make it display the <code>calc&gt; </code> prompt in a loop, read a line from the user, and split that line into an array of words."
+            },
+            {
+              "type": "heading",
+              "level": 3,
+              "html": "Step 1: Printing the prompt and reading a line with fgets"
+            },
+            {
+              "type": "paragraph",
+              "html": "Just like the Python interactive shell, our calculator runs inside a <code>while (1)</code> loop. Every turn of the loop:"
+            },
+            {
+              "type": "list",
+              "ordered": true,
+              "items": [
+                "We print <code>calc&gt; </code> (without a <code>\\n</code> so the user types on the same line) and call <code>fflush(stdout)</code> so the prompt appears on screen immediately.",
+                "We read a full line of text from the keyboard using <code>fgets(line, sizeof line, stdin)</code>.",
+                "If the user presses <kbd>Ctrl</kbd>+<kbd>D</kbd> (end-of-file), <code>fgets</code> returns <code>NULL</code>, so we print a newline and <code>break</code> out of the loop."
+              ]
+            },
+            {
+              "type": "code",
+              "language": "c",
+              "label": "printing the prompt and reading a line",
+              "code": "char line[256];\n\nwhile (1) {\n    printf(\"calc> \");\n    fflush(stdout);\n\n    if (fgets(line, sizeof line, stdin) == NULL) {\n        printf(\"\\n\");\n        break;\n    }\n    /* ... next we split `line` into words ... */\n}"
+            },
+            {
+              "type": "heading",
+              "level": 3,
+              "html": "Step 2: Splitting the line into words with strtok"
+            },
+            {
+              "type": "paragraph",
+              "html": "When the user types <code>add 2 3</code> and presses Enter, <code>line</code> holds the single string <code>\"add 2 3\\n\"</code>. We need to break that string into individual words stored in an array called <code>tokens</code>:"
+            },
+            {
+              "type": "list",
+              "ordered": false,
+              "items": [
+                "<code>tokens[0]</code> &rarr; <code>\"add\"</code>",
+                "<code>tokens[1]</code> &rarr; <code>\"2\"</code>",
+                "<code>tokens[2]</code> &rarr; <code>\"3\"</code>",
+                "<code>tokens[3]</code> &rarr; <code>NULL</code>"
+              ]
+            },
+            {
+              "type": "paragraph",
+              "html": "C provides <code>strtok</code> (in <code>&lt;string.h&gt;</code>) to split a string at spaces, tabs, and newlines (<code>\" \\t\\n\"</code>):"
+            },
+            {
+              "type": "list",
+              "ordered": false,
+              "items": [
+                "On the <strong>first call</strong>, you pass <code>line</code>: <code>strtok(line, \" \\t\\n\")</code> returns a pointer to the first word.",
+                "On <strong>every call after that</strong>, you pass <code>NULL</code>: <code>strtok(NULL, \" \\t\\n\")</code> continues from where it left off and returns the next word, until there are no words left (when it returns <code>NULL</code>)."
+              ]
+            },
+            {
+              "type": "code",
+              "language": "c",
+              "label": "splitting line into tokens[] using strtok",
+              "code": "char *tokens[17];   /* room for up to 16 words + 1 final NULL */\nint ntokens = 0;\n\nchar *word = strtok(line, \" \\t\\n\");\nwhile (word != NULL && ntokens < 16) {\n    tokens[ntokens] = word;\n    ntokens++;\n    word = strtok(NULL, \" \\t\\n\");\n}\ntokens[ntokens] = NULL;"
+            },
+            {
+              "type": "heading",
+              "level": 3,
+              "html": "Step 3: Handling blank lines and \"exit\" / \"quit\""
+            },
+            {
+              "type": "paragraph",
+              "html": "What if the user just pressed Enter on an empty line? Then <code>ntokens == 0</code>, and we should use <code>continue;</code> to jump straight to the next prompt. And what if the first word (<code>tokens[0]</code>) is <code>\"exit\"</code> or <code>\"quit\"</code>? In C, you compare strings with <code>strcmp(a, b) == 0</code> (never <code>==</code>):"
+            },
+            {
+              "type": "code",
+              "language": "c",
+              "label": "checking for empty line or exit/quit",
+              "code": "if (ntokens == 0) {\n    continue;   /* empty line: show prompt again */\n}\nif (strcmp(tokens[0], \"exit\") == 0 || strcmp(tokens[0], \"quit\") == 0) {\n    break;      /* leave the while loop and end program */\n}"
+            },
+            {
+              "type": "exercise",
+              "label": "Task: write and test calculator.c (Part A)",
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "html": "Open <code>~/calc_project/calculator.c</code> and put Part A together. At the bottom of the loop, we temporarily print the words so we can verify our splitter works:"
+                },
+                {
+                  "type": "code",
+                  "language": "c",
+                  "label": "calculator.c (Part A guided code)",
+                  "code": "#include <stdio.h>\n#include <string.h>\n\n#define MAX_LINE   256\n#define MAX_TOKENS 16\n\nint main(void) {\n    char line[MAX_LINE];\n\n    while (1) {\n        printf(\"calc> \");\n        fflush(stdout);\n\n        if (fgets(line, sizeof line, stdin) == NULL) {\n            printf(\"\\n\");\n            break;\n        }\n\n        char *tokens[MAX_TOKENS + 1];\n        int ntokens = 0;\n\n        char *word = strtok(line, \" \\t\\n\");\n        while (word != NULL && ntokens < MAX_TOKENS) {\n            tokens[ntokens] = word;\n            ntokens++;\n            word = strtok(NULL, \" \\t\\n\");\n        }\n        tokens[ntokens] = NULL;\n\n        /* TODO 1: if ntokens == 0, continue to the next prompt */\n\n        /* TODO 2: if tokens[0] is \"exit\" or \"quit\" (use strcmp), break */\n\n        /* Temporary test print: show each word we found */\n        for (int i = 0; i < ntokens; i++) {\n            printf(\"word[%d] = %s\\n\", i, tokens[i]);\n        }\n    }\n    return 0;\n}"
+                },
+                {
+                  "type": "paragraph",
+                  "html": "Compile and run it to verify that words are split properly and <code>exit</code> quits:"
+                },
+                {
+                  "type": "code",
+                  "language": "shell",
+                  "label": "testing Part A",
+                  "code": "$ gcc -Wall -Wextra -o calculator calculator.c\n$ ./calculator\ncalc> add 2 3\nword[0] = add\nword[1] = 2\nword[2] = 3\ncalc> exit\n$"
+                }
+              ]
+            },
+            {
+              "type": "checkpoint",
+              "title": "Checkpoint",
+              "items": [
+                "<code>calculator.c</code> shows <code>calc&gt; </code>, splits words cleanly even with extra spaces, ignores blank lines, and exits on <code>exit</code>, <code>quit</code>, or <kbd>Ctrl</kbd>+<kbd>D</kbd>."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "s3-4",
+          "no": "3.4",
+          "title": "calculator.c Part B: checking operator & argument count",
+          "blocks": [
+            {
+              "type": "lede",
+              "html": "Before <code>calculator.c</code> creates any child process, it must check two things: is the operator valid (<code>add</code>, <code>sub</code>, <code>multiply</code>, or <code>negate</code>), and did the user give the right number of arguments for that operator?"
+            },
+            {
+              "type": "heading",
+              "level": 3,
+              "html": "Step 1: Deciding how many arguments an operator needs"
+            },
+            {
+              "type": "paragraph",
+              "html": "Let's keep this simple and direct. Given <code>tokens[0]</code> (the operator word the user typed), we can check which operator it is and set a variable <code>expected_args</code>:"
+            },
+            {
+              "type": "list",
+              "ordered": false,
+              "items": [
+                "If <code>tokens[0]</code> is <code>\"add\"</code>, <code>\"sub\"</code>, or <code>\"multiply\"</code> &rarr; <code>expected_args = 2</code>.",
+                "Else if <code>tokens[0]</code> is <code>\"negate\"</code> &rarr; <code>expected_args = 1</code>.",
+                "Else &rarr; it is not a valid operator! Print the invalid operator message and <code>continue;</code> back to the prompt."
+              ]
+            },
+            {
+              "type": "code",
+              "language": "c",
+              "label": "checking the operator name",
+              "code": "int expected_args = 0;\n\nif (strcmp(tokens[0], \"add\") == 0 ||\n    strcmp(tokens[0], \"sub\") == 0 ||\n    strcmp(tokens[0], \"multiply\") == 0) {\n    expected_args = 2;\n} else if (strcmp(tokens[0], \"negate\") == 0) {\n    expected_args = 1;\n} else {\n    printf(\"Operation cannot execute: invalid operator \\\"%s\\\"\\n\", tokens[0]);\n    continue;\n}"
+            },
+            {
+              "type": "heading",
+              "level": 3,
+              "html": "Step 2: Checking the number of arguments"
+            },
+            {
+              "type": "paragraph",
+              "html": "If <code>ntokens</code> is the total number of words on the line (including the operator at <code>tokens[0]</code>), then the number of arguments the user supplied after the operator is <code>ntokens - 1</code>."
+            },
+            {
+              "type": "paragraph",
+              "html": "For example, in <code>add 2 3</code>, <code>ntokens</code> is <code>3</code>, so the user gave <code>3 - 1 = 2</code> arguments. If <code>got_args != expected_args</code>, we print the exact error message from the blueprint and <code>continue;</code>:"
+            },
+            {
+              "type": "code",
+              "language": "c",
+              "label": "checking the argument count",
+              "code": "int got_args = ntokens - 1;\nif (got_args != expected_args) {\n    printf(\"Operation cannot execute: %s needs %d argument(s), got %d\\n\",\n           tokens[0], expected_args, got_args);\n    continue;\n}"
+            },
+            {
+              "type": "exercise",
+              "label": "Task: add Part B to calculator.c and test it",
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "html": "Replace the temporary word-printing loop in <code>calculator.c</code> with the operator check and argument-count check above, followed by a temporary confirmation line:"
+                },
+                {
+                  "type": "code",
+                  "language": "c",
+                  "label": "inside the while (1) loop of calculator.c",
+                  "code": "        /* Check 1: Is tokens[0] a valid operator? */\n        int expected_args = 0;\n        if (strcmp(tokens[0], \"add\") == 0 ||\n            strcmp(tokens[0], \"sub\") == 0 ||\n            strcmp(tokens[0], \"multiply\") == 0) {\n            expected_args = 2;\n        } else if (strcmp(tokens[0], \"negate\") == 0) {\n            expected_args = 1;\n        } else {\n            printf(\"Operation cannot execute: invalid operator \\\"%s\\\"\\n\", tokens[0]);\n            continue;\n        }\n\n        /* Check 2: Did the user supply the right number of arguments? */\n        int got_args = ntokens - 1;\n        if (got_args != expected_args) {\n            /* TODO: print \"Operation cannot execute: %s needs %d argument(s), got %d\\n\"\n               and then continue; */\n        }\n\n        /* Temporary confirmation until Part C */\n        printf(\"OK: ready to run %s\\n\", tokens[0]);"
+                },
+                {
+                  "type": "paragraph",
+                  "html": "Compile and test these cases before moving to Part C:"
+                },
+                {
+                  "type": "code",
+                  "language": "shell",
+                  "label": "testing Part B",
+                  "code": "$ gcc -Wall -Wextra -o calculator calculator.c\n$ ./calculator\ncalc> add 2 3\nOK: ready to run add\ncalc> multiply 6\nOperation cannot execute: multiply needs 2 argument(s), got 1\ncalc> divide 4 2\nOperation cannot execute: invalid operator \"divide\"\ncalc> exit"
+                }
+              ]
+            },
+            {
+              "type": "checkpoint",
+              "title": "Checkpoint",
+              "items": [
+                "Invalid operators print <code>Operation cannot execute: invalid operator \"...\"</code>.",
+                "Wrong argument counts print <code>Operation cannot execute: &lt;op&gt; needs N argument(s), got M</code>."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "s3-5",
+          "no": "3.5",
+          "title": "calculator.c Part C: fork, execv and waitpid",
+          "blocks": [
+            {
+              "type": "lede",
+              "html": "Now for the final piece of <code>calculator.c</code>: when a command passes the checks in Part B, we fork a child process, use <code>execv</code> in the child to run <code>./add</code> (or <code>./sub</code>, <code>./multiply</code>, <code>./negate</code>), and use <code>waitpid</code> in the parent to wait for it and report its exit status."
+            },
+            {
+              "type": "heading",
+              "level": 3,
+              "html": "Step 1: Building the program path (\"./add\") and argument list"
+            },
+            {
+              "type": "paragraph",
+              "html": "Remember from Phase 1 &amp; 2 that your compiled child programs live in the current directory (<code>.</code>), so to run <code>add</code> we must pass the path <code>\"./add\"</code> to <code>execv</code>."
+            },
+            {
+              "type": "paragraph",
+              "html": "We can build that path string using <code>snprintf</code>, which works just like <code>printf</code> but writes into a <code>char</code> array:"
+            },
+            {
+              "type": "code",
+              "language": "c",
+              "label": "building the path string",
+              "code": "char path[64];\nsnprintf(path, sizeof path, \"./%s\", tokens[0]);"
+            },
+            {
+              "type": "paragraph",
+              "html": "And what array of arguments does <code>execv(path, tokens)</code> need? Look at what <code>tokens</code> already contains when the user types <code>add 2 3</code>:"
+            },
+            {
+              "type": "list",
+              "ordered": false,
+              "items": [
+                "<code>tokens[0]</code> is <code>\"add\"</code> &rarr; if we set <code>tokens[0] = path;</code> it becomes <code>\"./add\"</code>",
+                "<code>tokens[1]</code> is <code>\"2\"</code>",
+                "<code>tokens[2]</code> is <code>\"3\"</code>",
+                "<code>tokens[3]</code> is <code>NULL</code> (which we already set at the end of our <code>strtok</code> loop!)"
+              ]
+            },
+            {
+              "type": "paragraph",
+              "html": "That means <code>tokens</code> is <strong>already</strong> in the exact format <code>execv</code> needs!"
+            },
+            {
+              "type": "heading",
+              "level": 3,
+              "html": "Step 2: Forking and running execv in the child"
+            },
+            {
+              "type": "paragraph",
+              "html": "Just like in Phase 2, we add <code>#include &lt;unistd.h&gt;</code> and <code>#include &lt;sys/wait.h&gt;</code> at the top of <code>calculator.c</code>, flush <code>stdout</code>, and call <code>fork()</code>:"
+            },
+            {
+              "type": "code",
+              "language": "c",
+              "label": "fork and execv",
+              "code": "fflush(stdout);\npid_t pid = fork();\nif (pid < 0) {\n    perror(\"fork\");\n    continue;\n}\nif (pid == 0) {\n    /* Child process: swap into ./add, ./sub, ./multiply, or ./negate */\n    tokens[0] = path;\n    execv(path, tokens);\n    /* If execv returns, starting the program failed! */\n    perror(path);\n    _exit(127);\n}"
+            },
+            {
+              "type": "heading",
+              "level": 3,
+              "html": "Step 3: Waiting in the parent and reporting the exit status"
+            },
+            {
+              "type": "paragraph",
+              "html": "While the child runs, the parent calls <code>waitpid(pid, &amp;status, 0)</code> so it pauses until the child finishes. Then the parent inspects <code>status</code> using the macros from <code>&lt;sys/wait.h&gt;</code>:"
+            },
+            {
+              "type": "list",
+              "ordered": false,
+              "items": [
+                "<code>WIFEXITED(status)</code> is true if the child exited normally (via <code>return</code> or <code>exit</code>).",
+                "<code>WEXITSTATUS(status)</code> gives the number the child returned (<code>0</code> for success, <code>1</code> for invalid number).",
+                "<code>WIFSIGNALED(status)</code> is true if the child was killed by a signal, and <code>WTERMSIG(status)</code> gives the signal number."
+              ]
+            },
+            {
+              "type": "code",
+              "language": "c",
+              "label": "waiting and reporting in the parent",
+              "code": "int status;\nif (waitpid(pid, &status, 0) < 0) {\n    perror(\"waitpid\");\n    continue;\n}\n\nif (WIFEXITED(status)) {\n    int code = WEXITSTATUS(status);\n    if (code == 0) {\n        printf(\"child process exited successfully (PID %d)\\n\", pid);\n    } else {\n        printf(\"child process exited unsuccessfully with status %d (PID %d)\\n\",\n               code, pid);\n    }\n} else if (WIFSIGNALED(status)) {\n    printf(\"child process failed: killed by signal %d (PID %d)\\n\",\n           WTERMSIG(status), pid);\n}"
+            },
+            {
+              "type": "exercise",
+              "label": "Task: complete calculator.c and run the full system",
+              "blocks": [
+                {
+                  "type": "paragraph",
+                  "html": "Here is the complete guided structure of <code>calculator.c</code> with all three parts (A, B, and C) combined. Fill in the remaining <code>TODO</code> lines and compile:"
+                },
+                {
+                  "type": "code",
+                  "language": "c",
+                  "label": "calculator.c (full guided file)",
+                  "code": "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <unistd.h>\n#include <sys/wait.h>\n\n#define MAX_LINE   256\n#define MAX_TOKENS 16\n\nint main(void) {\n    char line[MAX_LINE];\n\n    while (1) {\n        /* --- Part A: prompt and split line into words --- */\n        printf(\"calc> \");\n        fflush(stdout);\n\n        if (fgets(line, sizeof line, stdin) == NULL) {\n            printf(\"\\n\");\n            break;\n        }\n\n        char *tokens[MAX_TOKENS + 1];\n        int ntokens = 0;\n        char *word = strtok(line, \" \\t\\n\");\n        while (word != NULL && ntokens < MAX_TOKENS) {\n            tokens[ntokens++] = word;\n            word = strtok(NULL, \" \\t\\n\");\n        }\n        tokens[ntokens] = NULL;\n\n        if (ntokens == 0) {\n            continue;\n        }\n        if (strcmp(tokens[0], \"exit\") == 0 || strcmp(tokens[0], \"quit\") == 0) {\n            break;\n        }\n\n        /* --- Part B: check operator name and argument count --- */\n        int expected_args = 0;\n        if (strcmp(tokens[0], \"add\") == 0 ||\n            strcmp(tokens[0], \"sub\") == 0 ||\n            strcmp(tokens[0], \"multiply\") == 0) {\n            expected_args = 2;\n        } else if (strcmp(tokens[0], \"negate\") == 0) {\n            expected_args = 1;\n        } else {\n            printf(\"Operation cannot execute: invalid operator \\\"%s\\\"\\n\", tokens[0]);\n            continue;\n        }\n\n        int got_args = ntokens - 1;\n        if (got_args != expected_args) {\n            printf(\"Operation cannot execute: %s needs %d argument(s), got %d\\n\",\n                   tokens[0], expected_args, got_args);\n            continue;\n        }\n\n        /* --- Part C: fork, execv the child program, and waitpid --- */\n        char path[64];\n        snprintf(path, sizeof path, \"./%s\", tokens[0]);\n\n        fflush(stdout);\n        pid_t pid = fork();\n        if (pid < 0) {\n            perror(\"fork\");\n            continue;\n        }\n        if (pid == 0) {\n            tokens[0] = path;\n            /* TODO 1: call execv(path, tokens); */\n            perror(path);\n            _exit(127);\n        }\n\n        int status;\n        /* TODO 2: call waitpid(pid, &status, 0) and check for < 0 */\n\n        if (WIFEXITED(status)) {\n            int code = WEXITSTATUS(status);\n            if (code == 0) {\n                printf(\"child process exited successfully (PID %d)\\n\", pid);\n            } else {\n                printf(\"child process exited unsuccessfully with status %d (PID %d)\\n\",\n                       code, pid);\n            }\n        } else if (WIFSIGNALED(status)) {\n            printf(\"child process failed: killed by signal %d (PID %d)\\n\",\n                   WTERMSIG(status), pid);\n        }\n    }\n    return 0;\n}"
+                },
+                {
+                  "type": "paragraph",
+                  "html": "Compile <code>calculator.c</code> and test it with all four operations and error cases:"
+                },
+                {
+                  "type": "code",
+                  "language": "shell",
+                  "label": "testing the complete calculator",
+                  "code": "$ gcc -Wall -Wextra -o calculator calculator.c\n$ ./calculator\ncalc> add 2 3\nResult: 5\nchild process exited successfully (PID 4243)\ncalc> sub 10 4\nResult: 6\nchild process exited successfully (PID 4244)\ncalc> multiply 6 7\nResult: 42\nchild process exited successfully (PID 4245)\ncalc> negate 5\nResult: -5\nchild process exited successfully (PID 4246)\ncalc> add 2 abc\n./add: invalid argument\nchild process exited unsuccessfully with status 1 (PID 4247)\ncalc> multiply 6\nOperation cannot execute: multiply needs 2 argument(s), got 1\ncalc> divide 4 2\nOperation cannot execute: invalid operator \"divide\"\ncalc> exit"
+                }
+              ]
+            },
+            {
+              "type": "checkpoint",
+              "title": "Checkpoint",
+              "items": [
+                "Valid commands fork a child, print <code>Result: ...</code>, and print <code>child process exited successfully (PID ...)</code>.",
+                "Non-numeric arguments (like <code>add 2 abc</code>) cause the child to return 1 and the parent to print <code>child process exited unsuccessfully with status 1 (PID ...)</code>.",
+                "Invalid operators and wrong argument counts are caught by the parent without forking."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "s3-6",
+          "no": "3.6",
+          "title": "Edge cases & watching the processes live",
+          "blocks": [
+            {
+              "type": "lede",
+              "html": "Your calculator is up and running! Before moving to Phase 4, let's test edge cases and watch the parent and child processes live in the Linux process table."
+            },
+            {
+              "type": "heading",
+              "level": 3,
+              "html": "Quick edge-case checklist"
+            },
+            {
+              "type": "table",
+              "head": [
+                "Input at calc&gt;",
+                "What should happen"
+              ],
+              "rows": [
                 [
-                  "<code>add   7   8</code> with extra spaces or tabs",
-                  "Works like <code>add 7 8</code>"
+                  "<code>add   7   8</code> (extra spaces/tabs)",
+                  "Prints <code>Result: 15</code> and exits successfully"
                 ],
-                ["an empty line", "A new prompt, no message"],
                 [
-                  "<code>negate -5</code>",
-                  "<code>Result: 5</code>. A leading minus is part of the number"
+                  "Empty line (just press Enter)",
+                  "Shows a fresh <code>calc&gt; </code> prompt with no error"
                 ],
                 [
-                  "<code>add 1 2 3</code>",
-                  "<code>Operation cannot execute: add needs 2 argument(s), got 3</code>"
+                  "<code>negate -5</code> (negative input)",
+                  "Prints <code>Result: 5</code>"
                 ],
                 [
-                  "<code>add 99999999999999999999 1</code>",
-                  "Child reports an invalid argument, parent reports status 1"
+                  "<code>add 1 2 3</code> (too many arguments)",
+                  "Prints <code>Operation cannot execute: add needs 2 argument(s), got 3</code>"
                 ],
                 [
-                  "<code>quit</code>, <code>exit</code>, <kbd>Ctrl</kbd>+<kbd>D</kbd>",
-                  "The program ends and <code>echo $?</code> prints 0"
+                  "<code>add 99999999999999999999 1</code> (overflow)",
+                  "Child reports invalid argument; parent reports status 1"
                 ],
                 [
-                  "a line of more than 300 characters",
-                  "Decide what <em>should</em> happen, then see what does. <code>man 3 fgets</code> explains the leftover"
-                ],
-                [
-                  "more than 16 words on one line",
-                  "Decide, then see. Is the message you print honest?"
+                  "<code>exit</code>, <code>quit</code>, or <kbd>Ctrl</kbd>+<kbd>D</kbd>",
+                  "Exits cleanly with status 0"
                 ]
               ]
             },
             {
-              type: "exercise",
-              label: "Task: watch the real process tree",
-              blocks: [
+              "type": "exercise",
+              "label": "Task: see parent and child live in ps",
+              "blocks": [
                 {
-                  type: "paragraph",
-                  html: "Prove to yourself that the PIDs and PPIDs from Phase 2 are exactly what your calculator creates."
-                },
-                {
-                  type: "list",
-                  ordered: true,
-                  items: [
-                    "Temporarily add <code>sleep(10);</code> (and <code>#include &lt;unistd.h&gt;</code>) to the start of <code>main</code> in <code>add.c</code>. Recompile it.",
-                    "Run the calculator and type <code>add 1 2</code>. While it waits, open a <strong>second terminal</strong>.",
-                    "In the second terminal run <code>ps -o pid,ppid,stat,comm --forest</code>. Find <code>calculator</code> and <code>add</code>. Which one's PID is the other's PPID?",
-                    "Also try <code>pstree -p $(pgrep -x calculator)</code>.",
-                    "Wait for it to finish, and check that the PID in the report line matches what you saw.",
-                    "Remove the <code>sleep</code> and recompile <code>add</code>."
-                  ]
-                },
-                {
-                  type: "hint",
-                  summary: "What you should see",
-                  blocks: [
-                    {
-                      type: "paragraph",
-                      html: "<code>add</code> is listed under <code>calculator</code>, and its PPID equals the calculator's PID. The calculator's own PPID is your shell."
-                    }
+                  "type": "list",
+                  "ordered": true,
+                  "items": [
+                    "Temporarily add <code>sleep(10);</code> (and <code>#include &lt;unistd.h&gt;</code>) at the top of <code>main</code> in <code>add.c</code>, and recompile <code>add</code>.",
+                    "Run <code>./calculator</code> and type <code>add 2 3</code>. It will pause for 10 seconds while the child runs.",
+                    "In a <strong>second terminal window</strong>, run <code>ps -o pid,ppid,stat,comm --forest</code>. Find <code>calculator</code> and <code>add</code>\u2014notice that <code>add</code>'s PPID is <code>calculator</code>'s PID!",
+                    "Remove <code>sleep(10);</code> from <code>add.c</code> and recompile <code>add</code>."
                   ]
                 }
               ]
             },
             {
-              type: "exercise",
-              label: "Task: make a child be killed",
-              blocks: [
-                {
-                  type: "paragraph",
-                  html: "Repeat the setup above with the 10 second sleep. While the child sleeps, run <code>kill -9</code> followed by the <code>add</code> PID from the second terminal. What does the calculator report? Which of your three report lines is that, and why could it not be “exited with status”?"
-                }
-              ]
-            },
-            {
-              type: "heading",
-              level: 4,
-              html: "Stretch ideas"
-            },
-            {
-              type: "list",
-              ordered: false,
-              items: [
-                "Add a <code>divide</code> operation. What should happen on division by zero, and which exit status should it use?",
-                "Let the user type <code>help</code> to list the operations from your table.",
-                "Print the PID of the calculator itself when it starts."
-              ]
-            },
-            {
-              type: "checkpoint",
-              title: "Phase 3 checkpoint",
-              items: [
-                "I tried every row of the break-it table and know what the program does for each.",
-                "I saw the parent and child in <code>ps</code> or <code>pstree</code> at the same time and read their PIDs and PPIDs.",
-                "I made a child die from a signal and saw how the parent reported it.",
-                "All five files are written by me, and I can explain every line."
+              "type": "checkpoint",
+              "title": "Phase 3 checkpoint",
+              "items": [
+                "All five C files (<code>calculator.c</code>, <code>add.c</code>, <code>sub.c</code>, <code>multiply.c</code>, <code>negate.c</code>) are written, compiled, and working.",
+                "I tested the edge cases in the table above and can explain every part of my code."
               ]
             }
           ]
@@ -3192,3 +2870,4 @@ clone(...) = 382
     }
   ]
 };
+
